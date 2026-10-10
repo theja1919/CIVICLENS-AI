@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CivicLens AI — Admin Dashboard</title>
+  <meta name="description" content="Admin dashboard for CivicLens AI — real-time civic issue management with map, statistics, duplicate detection, and status workflow." />
+  <meta name="theme-color" content="#0a0f1e" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Leaflet CSS — loaded from CDN; graceful fallback if offline -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+
+<div class="bg-mesh" aria-hidden="true"></div>
+
+<div class="demo-banner" role="note" aria-label="Demo notice">
+  ⚠️ <strong>Demo Dashboard.</strong>
+  This dashboard has no authentication and is intended for hackathon demonstration only.
+  Do not expose it as a production admin system without adding authentication and HTTPS.
+  All fictional sample data is clearly labelled. No government department is notified by this application.
+</div>
+
+<!-- =========================================================
+     Toast container
+     ========================================================= -->
+<div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+<!-- =========================================================
+     Header
+     ========================================================= -->
+<header class="site-header" role="banner">
+  <div class="logo">
+    <div class="logo-icon" aria-hidden="true">🏙️</div>
+    <span class="logo-text">Civic<span>Lens</span> AI</span>
+    <span class="logo-sub">Demo Dashboard</span>
+  </div>
+  <div class="header-actions">
+    <span class="api-status-pill" id="apiStatus">
+      <span class="api-dot"></span> Connecting…
+    </span>
+    <button class="refresh-btn" id="refreshBtn" aria-label="Refresh dashboard">
+      ↻ Refresh
+    </button>
+    <a href="index.html" class="report-link-btn">+ New Report</a>
+  </div>
+</header>
+
+<!-- =========================================================
+     Main layout
+     ========================================================= -->
+<main class="dash-layout" role="main">
+
+  <!-- ---- Sidebar ----------------------------------------- -->
+  <nav class="sidebar" role="navigation" aria-label="Dashboard sections">
+    <ul class="nav-list">
+      <li><a href="#stats-section"    class="nav-item active" data-section="stats">📊 Overview</a></li>
+      <li><a href="#map-section"      class="nav-item"        data-section="map">🗺️ Map</a></li>
+      <li><a href="#reports-section"  class="nav-item"        data-section="reports">📋 Reports</a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <p class="sidebar-note">Data from SQLite.<br/>All stats are live.</p>
+    </div>
+  </nav>
+
+  <!-- ---- Content ----------------------------------------- -->
+  <div class="dash-content">
+
+    <!-- ===================================================
+         Section: Overview / Stats
+         =================================================== -->
+    <section id="stats-section" class="dash-section" aria-labelledby="statsHeading">
+      <h1 id="statsHeading" class="section-title">Overview</h1>
+
+      <!-- KPI cards -->
+      <div class="kpi-grid" role="list">
+
+        <article class="kpi-card" role="listitem" aria-label="Total reports">
+          <div class="kpi-icon" aria-hidden="true">📋</div>
+          <div class="kpi-body">
+            <div class="kpi-value" id="kpiTotal">—</div>
+            <div class="kpi-label">Total Reports</div>
+          </div>
+        </article>
+
+        <article class="kpi-card kpi-submitted" role="listitem" aria-label="Submitted reports">
+          <div class="kpi-icon" aria-hidden="true">📥</div>
+          <div class="kpi-body">
+            <div class="kpi-value" id="kpiSubmitted">—</div>
+            <div class="kpi-label">Submitted</div>
+          </div>
+        </article>
+
+        <article class="kpi-card kpi-progress" role="listitem" aria-label="In-progress reports">
+          <div class="kpi-icon" aria-hidden="true">⚙️</div>
+          <div class="kpi-body">
+            <div class="kpi-value" id="kpiProgress">—</div>
+            <div class="kpi-label">In Progress</div>
+          </div>
+        </article>
+
+        <article class="kpi-card kpi-resolved" role="listitem" aria-label="Resolved reports">
+          <div class="kpi-icon" aria-hidden="true">✅</div>
+          <div class="kpi-body">
+            <div class="kpi-value" id="kpiResolved">—</div>
+            <div class="kpi-label">Resolved</div>
+          </div>
+        </article>
+
+        <article class="kpi-card kpi-high" role="listitem" aria-label="High-priority reports">
+          <div class="kpi-icon" aria-hidden="true">🔴</div>
+          <div class="kpi-body">
+            <div class="kpi-value" id="kpiHigh">—</div>
+            <div class="kpi-label">High Priority (≥65)</div>
+          </div>
+        </article>
+
+      </div>
+
+      <!-- Category breakdown -->
+      <div class="card mt-6" aria-label="Reports by category">
+        <div class="card-header">
+          <div class="card-header-icon" aria-hidden="true">🏷️</div>
+          <div>
+            <h2>Reports by Category</h2>
+            <p>Counted from live database records</p>
+          </div>
+        </div>
+        <div class="cat-bars" id="catBars" role="list" aria-live="polite">
+          <p class="empty-state">Loading…</p>
+        </div>
+      </div>
+
+      <!-- High-priority reports -->
+      <div class="card mt-6" aria-label="Recent high-priority reports">
+        <div class="card-header">
+          <div class="card-header-icon" aria-hidden="true">⚠️</div>
+          <div>
+            <h2>Recent High-Priority Reports</h2>
+            <p>Score ≥ 65 — prototype estimate only, not an official risk assessment</p>
+          </div>
+        </div>
+        <div id="highPriorityList" aria-live="polite">
+          <p class="empty-state">No high-priority reports yet.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================
+         Section: Map
+         =================================================== -->
+    <section id="map-section" class="dash-section hidden" aria-labelledby="mapHeading">
+      <h1 id="mapHeading" class="section-title">Issue Map</h1>
+
+      <div class="map-disclaimer card mb-4" role="note">
+        <strong>ℹ️ Map note:</strong> Only reports with coordinates are shown.
+        Reports without coordinates appear in the Reports list.
+        Map tiles require an internet connection (OpenStreetMap).
+        If tiles fail to load, the report list below remains usable.
+      </div>
+
+      <div class="card map-card">
+        <div id="leafletMap" style="height:480px; border-radius:12px;" aria-label="Interactive issue map"></div>
+        <div class="map-tile-error hidden" id="mapTileError" role="alert">
+          ⚠️ Map tiles could not load — internet connection may be unavailable.
+          Report data is still accessible in the Reports section.
+        </div>
+      </div>
+
+      <div class="map-legend card mt-4">
+        <h3 style="margin-bottom:12px; font-size:.9rem; color:var(--clr-text-muted)">Legend</h3>
+        <div class="legend-grid">
+          <span class="legend-dot" style="background:#f59e0b"></span><span>Pothole</span>
+          <span class="legend-dot" style="background:#10b981"></span><span>Garbage</span>
+          <span class="legend-dot" style="background:#8b5cf6"></span><span>Streetlight</span>
+          <span class="legend-dot" style="background:#06b6d4"></span><span>Water Leak</span>
+          <span class="legend-dot" style="background:#6b7280"></span><span>Other</span>
+        </div>
+        <p id="mapStats" class="map-stats-note" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <!-- ===================================================
+         Section: Reports List
+         =================================================== -->
+    <section id="reports-section" class="dash-section hidden" aria-labelledby="reportsHeading">
+      <h1 id="reportsHeading" class="section-title">All Reports</h1>
+
+      <!-- Filters -->
+      <div class="filters-bar card mb-4">
+        <div class="filter-row">
+          <div class="filter-group">
+            <label class="filter-label" for="filterSearch">Search</label>
+            <input type="search" id="filterSearch" class="filter-input"
+                   placeholder="Search descriptions…" aria-label="Search reports by description" />
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="filterCategory">Category</label>
+            <select id="filterCategory" class="filter-select" aria-label="Filter by category">
+              <option value="">All categories</option>
+              <option value="pothole">Pothole</option>
+              <option value="garbage">Garbage</option>
+              <option value="broken_streetlight">Broken Streetlight</option>
+              <option value="water_leak">Water Leak</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="filterStatus">Status</label>
+            <select id="filterStatus" class="filter-select" aria-label="Filter by status">
+              <option value="">All statuses</option>
+              <option value="submitted">Submitted</option>
+              <option value="assigned">Assigned</option>
+              <option value="in_progress">In Progress</option>
+              <option value="resolved">Resolved</option>
+            </select>
+          </div>
+          <button class="apply-btn" id="applyFilters">Apply</button>
+          <button class="clear-btn" id="clearFilters">Clear</button>
+        </div>
+      </div>
+
+      <!-- Report table -->
+      <div class="card">
+        <div class="table-meta" aria-live="polite">
+          <span id="reportCount">Loading…</span>
+        </div>
+        <div class="table-wrapper" role="region" aria-label="Reports table" tabindex="0">
+          <table class="report-table" id="reportTable" aria-live="polite">
+            <thead>
+              <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Category</th>
+                <th scope="col">Description</th>
+                <th scope="col">Status</th>
+                <th scope="col">Priority</th>
+                <th scope="col">Location</th>
+                <th scope="col">Submitted</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="reportTableBody">
+              <tr><td colspan="8" class="empty-cell">Loading reports…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination-bar">
+          <button class="page-btn" id="prevPage" disabled>← Prev</button>
+          <span class="page-info" id="pageInfo">Page 1</span>
+          <button class="page-btn" id="nextPage">Next →</button>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /.dash-content -->
+</main>
+
+<!-- =========================================================
+     Report Detail Modal
+     ========================================================= -->
+<div class="modal-overlay hidden" id="modalOverlay" role="dialog"
+     aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal" id="reportModal">
+    <button class="modal-close" id="modalClose" aria-label="Close">✕</button>
+    <h2 class="modal-title" id="modalTitle">Report Details</h2>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WPeU=" crossorigin=""></script>
+<script src="dashboard.js"></script>
+</body>
+</html>

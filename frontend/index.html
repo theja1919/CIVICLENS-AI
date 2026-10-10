@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CivicLens AI — Report a Civic Issue</title>
+  <meta name="description" content="Report potholes, garbage, broken streetlights, water leaks, and other civic issues in your neighbourhood. Your report reaches local authorities instantly." />
+  <meta name="theme-color" content="#0a0f1e" />
+
+  <!-- Preconnect for Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Animated background -->
+  <div class="bg-mesh" aria-hidden="true"></div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- =====================================================================
+       Header
+       ===================================================================== -->
+  <header class="site-header" role="banner">
+    <div class="logo">
+      <div class="logo-icon" aria-hidden="true">🏙️</div>
+      <span class="logo-text">Civic<span>Lens</span> AI</span>
+    </div>
+    <span class="nav-badge">Phase 1 · Beta</span>
+  </header>
+
+  <!-- =====================================================================
+       Hero
+       ===================================================================== -->
+  <section class="hero" aria-label="Introduction">
+    <div class="hero-label" role="status">System operational</div>
+    <h1>Report a <span class="highlight">Civic Issue</span><br/>in Your Community</h1>
+    <p>
+      Help keep your city safe and clean. Submit an issue report and it will be logged,
+      prioritised, and routed to the relevant local authority team.
+    </p>
+  </section>
+
+  <!-- =====================================================================
+       Main
+       ===================================================================== -->
+  <main class="main-container" role="main">
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- Report form card                                                    -->
+    <!-- ------------------------------------------------------------------ -->
+    <div class="card" id="reportFormCard">
+
+      <div class="card-header">
+        <div class="card-header-icon" aria-hidden="true">📋</div>
+        <div>
+          <h2>Issue Report Form</h2>
+          <p>All fields marked <span style="color:var(--clr-error)">*</span> are required</p>
+        </div>
+      </div>
+
+      <form id="reportForm" novalidate>
+
+        <!-- --- Category -------------------------------------------------- -->
+        <div class="form-group" style="margin-bottom: var(--space-6)">
+          <span class="form-label" id="categoryLabel">
+            Issue Category <span class="required">*</span>
+          </span>
+          <div class="category-grid" role="radiogroup" aria-labelledby="categoryLabel">
+
+            <label class="category-option" for="cat-pothole">
+              <input type="radio" id="cat-pothole" name="category" value="pothole" />
+              <div class="category-card">
+                <span class="cat-icon" aria-hidden="true">🕳️</span>
+                <span class="cat-label">Pothole</span>
+              </div>
+            </label>
+
+            <label class="category-option" for="cat-garbage">
+              <input type="radio" id="cat-garbage" name="category" value="garbage" />
+              <div class="category-card">
+                <span class="cat-icon" aria-hidden="true">🗑️</span>
+                <span class="cat-label">Garbage</span>
+              </div>
+            </label>
+
+            <label class="category-option" for="cat-streetlight">
+              <input type="radio" id="cat-streetlight" name="category" value="broken_streetlight" />
+              <div class="category-card">
+                <span class="cat-icon" aria-hidden="true">💡</span>
+                <span class="cat-label">Broken Streetlight</span>
+              </div>
+            </label>
+
+            <label class="category-option" for="cat-water">
+              <input type="radio" id="cat-water" name="category" value="water_leak" />
+              <div class="category-card">
+                <span class="cat-icon" aria-hidden="true">💧</span>
+                <span class="cat-label">Water Leak</span>
+              </div>
+            </label>
+
+            <label class="category-option" for="cat-other">
+              <input type="radio" id="cat-other" name="category" value="other" />
+              <div class="category-card">
+                <span class="cat-icon" aria-hidden="true">📌</span>
+                <span class="cat-label">Other</span>
+              </div>
+            </label>
+
+          </div>
+          <div class="field-error" id="categoryError" role="alert" aria-live="polite"></div>
+        </div>
+
+        <!-- --- Description ----------------------------------------------- -->
+        <div class="form-group" style="margin-bottom: var(--space-6)">
+          <label class="form-label" for="description">
+            Issue Description <span class="required">*</span>
+          </label>
+          <textarea
+            id="description"
+            name="description"
+            class="form-textarea"
+            placeholder="Please describe the issue in detail — location landmarks, severity, how long it has been present, any immediate danger, etc."
+            rows="4"
+            maxlength="2000"
+            aria-required="true"
+            aria-describedby="descHint descError"
+          ></textarea>
+          <div class="form-hint" id="descHint">
+            <span id="descCount">0</span>/2000 characters · Minimum 5 characters
+          </div>
+          <div class="field-error" id="descError" role="alert" aria-live="polite"></div>
+        </div>
+
+        <!-- --- Location -------------------------------------------------- -->
+        <div class="form-group" style="margin-bottom: var(--space-6)">
+          <span class="form-label" id="locationLabel">
+            Location Coordinates <span class="optional">(optional but recommended)</span>
+          </span>
+
+          <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); flex-wrap: wrap;">
+            <button
+              type="button"
+              class="geo-btn"
+              id="geoBtn"
+              aria-label="Use my current location"
+            >
+              <span class="geo-icon" aria-hidden="true">📍</span>
+              Use My Location
+            </button>
+            <div class="geo-status" id="geoStatus" role="status" aria-live="polite"></div>
+          </div>
+
+          <div class="location-row" aria-labelledby="locationLabel">
+            <div class="form-group">
+              <label class="form-label" for="latitude" style="font-weight: 500; font-size: 0.8125rem; color: var(--clr-text-muted)">Latitude</label>
+              <input
+                type="number"
+                id="latitude"
+                name="latitude"
+                class="form-input"
+                placeholder="e.g. 40.7128"
+                step="any"
+                min="-90"
+                max="90"
+                aria-describedby="latError"
+              />
+              <div class="field-error" id="latError" role="alert" aria-live="polite"></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="longitude" style="font-weight: 500; font-size: 0.8125rem; color: var(--clr-text-muted)">Longitude</label>
+              <input
+                type="number"
+                id="longitude"
+                name="longitude"
+                class="form-input"
+                placeholder="e.g. -74.0060"
+                step="any"
+                min="-180"
+                max="180"
+                aria-describedby="lonError"
+              />
+              <div class="field-error" id="lonError" role="alert" aria-live="polite"></div>
+            </div>
+          </div>
+          <p class="form-hint">Coordinates are used to plot the issue on a map for authorities. Only partial coordinate pairs will cause an error.</p>
+        </div>
+
+        <!-- --- Photo upload ---------------------------------------------- -->
+        <div class="form-group" style="margin-bottom: var(--space-8)">
+          <span class="form-label" id="photoLabel">
+            Photo Evidence <span class="optional">(optional · max 5 MB)</span>
+          </span>
+
+          <div
+            class="upload-zone"
+            id="uploadZone"
+            role="button"
+            tabindex="0"
+            aria-label="Upload a photo of the issue"
+            aria-describedby="photoLabel"
+          >
+            <input
+              type="file"
+              id="photoInput"
+              name="image"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              aria-hidden="true"
+              tabindex="-1"
+            />
+            <span class="upload-icon" aria-hidden="true">📷</span>
+            <span class="upload-label">Drop a photo here or click to browse</span>
+            <span class="upload-hint">JPEG · PNG · GIF · WebP · Max 5 MB</span>
+          </div>
+
+          <div class="upload-preview" id="uploadPreview">
+            <img id="previewImg" class="preview-img" src="" alt="Selected photo preview" />
+            <div class="preview-info">
+              <span id="previewName" style="font-weight: 600"></span>
+              <button type="button" class="preview-remove" id="removePhoto" aria-label="Remove selected photo">
+                ✕ Remove
+              </button>
+            </div>
+          </div>
+
+          <div class="field-error" id="photoError" role="alert" aria-live="polite"></div>
+        </div>
+
+        <!-- --- Error banner ---------------------------------------------- -->
+        <div class="form-error-banner" id="formErrorBanner" role="alert" aria-live="assertive"></div>
+
+        <!-- --- Submit ---------------------------------------------------- -->
+        <button
+          type="submit"
+          class="submit-btn"
+          id="submitBtn"
+          aria-live="polite"
+        >
+          Submit Report
+        </button>
+
+      </form>
+    </div><!-- /.card -->
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- Success confirmation card                                           -->
+    <!-- ------------------------------------------------------------------ -->
+    <div class="success-card" id="successCard" role="alert" aria-live="polite" aria-atomic="true">
+
+      <div class="success-icon" aria-hidden="true">✅</div>
+      <h3>Report Submitted!</h3>
+      <p>Your civic issue has been logged and will be reviewed by local authorities.</p>
+
+      <div class="report-id-badge">
+        <div>
+          <div class="id-label">Report ID</div>
+          <div class="id-value" id="reportIdDisplay">#—</div>
+        </div>
+        <div>
+          <div class="id-label">Status</div>
+          <div class="id-value" id="reportStatusDisplay" style="font-size: 1rem; color: var(--clr-warning)">—</div>
+        </div>
+      </div>
+
+      <div class="classifier-note" id="classifierNote">
+        <strong>🤖 Rule-Based Suggestion</strong>
+        <span id="classifierText"></span>
+        <span class="clf-disclaimer">This is an automated keyword-based suggestion only, not AI image recognition or machine learning.</span>
+      </div>
+
+      <div>
+        <span class="status-pill" id="statusPill">Submitted — Pending Review</span>
+      </div>
+
+      <button
+        type="button"
+        class="reset-btn"
+        id="newReportBtn"
+        aria-label="Submit another report"
+      >
+        + Submit Another Report
+      </button>
+
+    </div><!-- /.success-card -->
+
+  </main><!-- /.main-container -->
+
+  <!-- =====================================================================
+       Footer
+       ===================================================================== -->
+  <footer class="site-footer" role="contentinfo">
+    <p>
+      CivicLens AI · Phase 1 · 
+      <a href="/docs" target="_blank" rel="noopener">API Docs</a> · 
+      Civic reporting platform — No paid services or AI API keys required.
+    </p>
+  </footer>
+
+  <script src="app.js"></script>
+
+</body>
+</html>
